@@ -70,7 +70,4 @@ lightweight. See `development_exploration.ipynb` for the full-scale pipeline.
 LLM-as-judge validated against 15 blind human ratings: 93% overall agreement
 (within +/-1 point across Groundedness, Relevance, Tone, Actionability).
 
-Full write-up -- problem framing, failure analysis, why the 69% headline number
-is misleading, the V1/V2 prompt-iteration experiment, and engineering
-challenges with resolutions -- is in the accompanying report (PDF), shared
-separately.
+
