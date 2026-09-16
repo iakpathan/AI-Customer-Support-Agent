@@ -1,30 +1,31 @@
-# AI Customer Support Agent — Hiver SDE Intern Assignment
+# AI Customer Support Agent
 
 An AI support agent for American Airlines (Kaggle Twitter Customer Support dataset)
 that classifies incoming messages into 8 intents, drafts replies grounded in
 historically similar resolutions (RAG), and decides auto-handle vs. escalate
 with a stated reason.
 
-
-## Repository Structure
+##Repository Structure
+AI-Customer-Support-Agent/
 ├── README.md
 ├── requirements.txt
 ├── .gitignore
-├── 
-│ ├── golden_set_blind.csv # 187 conversations, blind human-labeled ground truth
-│ ├── classification_results.csv # 762 LLM-classified threads
-│ ├── judge_scores.csv # LLM-as-judge scores for 40 drafted replies
-│ ├── human_judge_validation.csv # 15 blind human ratings, validates the judge
-│ └── retrieval_demo_corpus.pkl # 1,000-thread sample for the live pipeline demo
-├
-│ ├── 01_development_and_exploration.ipynb # full development process: data pipeline,
-│ │ # debugging, prompt iteration (see report
-│ │ # "Engineering Challenges" for the highlights)
-│ ├── 02_reproduce_results.ipynb # regenerates every report table from data/*.csv
-│ │ # (no API key needed, ~1 minute)
-│ └── 03_test_pipeline.ipynb # runs the live agent end-to-end on any message
-│ # (classify → retrieve → draft → escalate;
-│ # requires a Groq API key)
+├── data/
+│   ├── golden_set_blind.csv          - 187 conversations, blind human-labeled ground truth
+│   ├── classification_results.csv    - 762 LLM-classified threads
+│   ├── judge_scores.csv              - LLM-as-judge scores for 40 drafted replies
+│   ├── human_judge_validation.csv    - 15 blind human ratings, validates the judge
+│   └── retrieval_demo_corpus.pkl     - 1,000-thread sample for the live pipeline demo
+├── notebooks/
+│   ├── 01_development_and_exploration.ipynb  - full development process: data pipeline,
+│   │                                            debugging, prompt iteration (see report
+│   │                                            "Engineering Challenges" for highlights)
+│   ├── 02_reproduce_results.ipynb            - regenerates every report table from
+│   │                                            data/*.csv (no API key needed, ~1 minute)
+│   └── 03_test_pipeline.ipynb                - runs the live agent end-to-end on any
+│                                                message (classify, retrieve, draft,
+│                                                escalate; requires a Groq API key)
+
 
 ## Setup
 
