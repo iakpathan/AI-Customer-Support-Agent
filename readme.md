@@ -1,76 +1,86 @@
-```markdown
-# AI Customer Support Agent: Twitter Support Pipeline & Evaluation Harness
+# AI Customer Support Agent — Hiver SDE Intern Assignment
 
-A production-grade, end-to-end data engineering and LLM pipeline built for a technical assessment, processing real-world customer support interactions from the Kaggle Twitter Customer Support dataset (focusing on American Airlines). 
+An AI support agent for American Airlines (Kaggle Twitter Customer Support dataset)
+that classifies incoming messages into 8 intents, drafts replies grounded in
+historically similar resolutions (RAG), and decides auto-handle vs. escalate
+with a stated reason.
 
-This system integrates data ingestion, multi-turn thread graph reconstruction, PII redaction, a Retrieval-Augmented Generation (RAG) reply framework, and an automated LLM-as-judge evaluation harness.
 
----
+## Repository Structure
+├── README.md
+├── requirements.txt
+├── .gitignore
+├── 
+│ ├── golden_set_blind.csv # 187 conversations, blind human-labeled ground truth
+│ ├── classification_results.csv # 762 LLM-classified threads
+│ ├── judge_scores.csv # LLM-as-judge scores for 40 drafted replies
+│ ├── human_judge_validation.csv # 15 blind human ratings, validates the judge
+│ └── retrieval_demo_corpus.pkl # 1,000-thread sample for the live pipeline demo
+├
+│ ├── 01_development_and_exploration.ipynb # full development process: data pipeline,
+│ │ # debugging, prompt iteration (see report
+│ │ # "Engineering Challenges" for the highlights)
+│ ├── 02_reproduce_results.ipynb # regenerates every report table from data/*.csv
+│ │ # (no API key needed, ~1 minute)
+│ └── 03_test_pipeline.ipynb # runs the live agent end-to-end on any message
+│ # (classify → retrieve → draft → escalate;
+│ # requires a Groq API key)
 
-## System Architecture Overview
-
-1. **Ingestion & Thread Reconstruction:** Filters raw tweets targeting `@AmericanAir`, traversing response graph relationships recursively to stitch fragmented multi-turn chats into chronological conversations (deduplicated by root `tweet_id` to 10,428 unique threads).
-2. **Intent Classification:** Evaluates customer messages across an 8-category inductively derived taxonomy using an LLM backend (`openai/gpt-oss-20b`).
-3. **Retrieval-Augmented Generation (RAG):** Embeds historical resolutions using `sentence-transformers` (`all-MiniLM-L6-v2`) and matches them via `faiss-cpu` cosine similarity to ground generated draft replies in authentic brand voice and resolution workflows.
-4. **Safety & Escalation Routing:** Combines the predicted intent with a deterministic keyword scan to drive automated handling decisions or trigger priority human handoffs.
-5. **Evaluation Harness:** Employs an independent multi-dimensional LLM-as-judge scoring pipeline (assessing Groundedness, Relevance, Tone, and Actionability) validated against human ratings.
-
----
-
-## Project Structure
-
-```text
-├── customer_support_pipeline.ipynb   # Main end-to-end execution notebook
-├── hiver_support_agent_architecture.png # System architecture diagram asset
-├── README.md                         # Project documentation and setup guide
-└── report.pdf                        # Final 6-page technical documentation report
-
-```
-
----
-
-## Key Engineering Challenges & Solutions
-
-The pipeline resolves several tangible real-world data and API friction points:
-
-* **Thread Depth & Truncation:** Raised recursive thread-walking ceilings from 10 to 30 turns after empirical distribution analysis revealed threads spanning up to 21 turns.
-* **API Availability & Model Shifts:** Migrated operational endpoints from deprecated Groq models (`llama-3.1-8b-instant`) to stable alternatives (`openai/gpt-oss-20b`).
-* **Reasoning Token Management:** Configured explicit `max_tokens` boundaries and `reasoning_effort="low"` to prevent reasoning models from timing out or returning empty traces.
-* **Quota Exhaustion & Persistence:** Implemented batch checkpointing using Python's `pickle` module alongside Google Drive syncing to survive runtime disconnections.
-* **Keyword Ordering Bias:** Replaced fragile ordered `if/else` keyword checks with a multi-class scoring function that evaluates matches across all categories simultaneously.
-
----
-
-## Setup and Reproduction
-
-### Prerequisites
-
-* Python 3.10+
-* Google Colab environment (recommended) or local Jupyter setup.
-
-### Required Dependencies
-
-Install the core libraries directly in your environment:
+## Setup
 
 ```bash
-pip install pandas numpy sentence-transformers faiss-cpu groq tqdm
-
+git clone https://github.com/iakpathan/AI-Customer-Support-Agent.git
+cd AI-Customer-Support-Agent
+python -m venv venv
+venv\Scripts\activate          # Windows
+# source venv/bin/activate     # macOS/Linux
+pip install -r requirements.txt
 ```
 
-### Running the Notebook
+## Reproducing the Reported Results (recommended first step)
 
-1. Open `customer_support_pipeline.ipynb` in Google Colab.
-2. Ensure your API provider credentials (e.g., Groq API key) are securely loaded into your environment variables (`os.environ["GROQ_API_KEY"]`).
-3. Execute the cells sequentially. The data ingestion and vector indexing blocks automatically handle checkpointing and caching via local/Drive persistence to resume safely if rate limits or interruptions occur.
+Open `notebooks/02_reproduce_results.ipynb` in Jupyter or VS Code and run all cells
+top to bottom (Kernel → Restart & Run All). It loads the committed CSVs in `data/`
+directly — **no API key required**, runs in under a minute — and regenerates:
 
----
+- The three-way baseline comparison (Trivial 18.7% · Keyword 49.7% · LLM 69.0%)
+- The per-category accuracy breakdown and confusion matrix
+- The LLM-as-judge vs. human validation table (93% overall agreement)
 
-## Author
+All numbers should match `report/hiver_report.pdf` exactly.
 
-**Pattan Munwar Ali Khan**
+## Testing the Live Pipeline
 
-*Contact:* pathanali2005@gmail.com
+Open `notebooks/03_test_pipeline.ipynb`. This runs the actual agent on a real
+message you provide: intent classification → grounded retrieval → reply
+drafting → escalation decision.
 
-```
+**Before running:**
+1. Get a free Groq API key at [console.groq.com](https://console.groq.com)
+2. Run the notebook top to bottom — it will prompt you to paste your API key
+   securely (input is hidden, not stored in the notebook)
+3. Edit the `test_message` variable in the demo cell to try your own examples
 
-```
+This notebook uses a 1,000-thread sample (`data/retrieval_demo_corpus.pkl`) for
+retrieval rather than the full 10,428-thread corpus, to keep the repo lightweight.
+See `01_development_and_exploration.ipynb` for the full-scale pipeline.
+
+## Development Process
+
+`notebooks/01_development_and_exploration.ipynb` contains the complete,
+unedited development history — data pipeline construction, every debugging
+step, and the V1/V2 prompt-iteration experiment. This is the working log
+referenced throughout the report's "Engineering Challenges" section; it is
+not the reproduction entry point (use `02_reproduce_results.ipynb` for that).
+
+## Key Results Summary
+
+| Method | Intent Classification Accuracy |
+|---|---|
+| Trivial (majority class) | 18.7% |
+| Simple (keyword classifier) | 49.7% |
+| **LLM classifier (openai/gpt-oss-20b)** | **69.0%** |
+
+LLM-as-judge validated against 15 blind human ratings: **93% overall agreement**
+(within ±1 point across Groundedness, Relevance, Tone, Actionability).
+
